@@ -1,0 +1,154 @@
+<SliderInterfaceRoot>:
+    player: player
+    target: target
+    gauge: gauge
+    rubber: rubber
+    conn_indicator: conn_indicator
+    server_ip: server_ip
+    server_port: server_port
+    connect_button: connect_button
+
+    orientation: 'vertical'
+
+    BoxLayout:
+        size_hint_y: .06
+#        pos: 0, self.parent.size[1] - self.size[1]
+        canvas:
+            Color:
+                rgb: .1, .1, .1
+            Rectangle:
+                size: self.size
+                pos: self.pos
+        on_touch_down: print(self.size)
+        spacing: 10
+        Label:
+            text: "Server IP:"
+        TextInput:
+            id: server_ip
+            text: "192.168.6.2"
+        Label:
+            text: "Server Port:"
+        TextInput:
+            id: server_port
+            text: "8080"
+        Button:
+            id: connect_button
+            text: "Connect"
+            on_press: root.setup_connection(self)
+        ConnectionIndicator:
+            id: conn_indicator
+#        Label:
+#            size: 20, self.parent.size[1]
+#            canvas:
+#                Color:
+#                    rgb: 1, 0, 0
+#                Rectangle:
+#                    pos: self.pos
+#                    size: self.size
+    Label:
+        size_hint_y: .07
+        text: root.status_message
+    Widget:
+        TimeGauge:
+            id:gauge
+            pos: self.parent.size[0]-self.size[0]*1.5, self.parent.size[1]/2
+            size: self.size[0], self.parent.size[1]
+
+        Target:
+            id: target
+            pos: self.parent.size[0]/2, self.parent.size[1]/2
+
+        RubberObstacle:
+            id: rubber
+            pos: self.parent.size[0]/2, self.parent.size[1]/2
+            size: 1, self.parent.size[1]
+
+        Player:
+            id: player
+            pos: self.parent.size[0]/2, self.parent.size[1]/2
+
+#    CrossHair:
+#        pos: player.pos
+
+
+<Player>:
+    size: 50, 50
+    cross_size: 80
+    canvas:
+        Color:
+            rgb: .4,.8,.9
+        Ellipse:
+            size: self.size
+            #size: [s*self.in_scale for s in self.size]
+            pos: [p-s/2 for p, s in zip(self.pos, self.size)]
+        Color:
+            rgb: 1, 1, 1
+#        Line:
+#            points: self.pos[0]-self.cross_size, self.pos[1], self.pos[0]+self.cross_size, self.pos[1]
+#        Line:
+#            points: self.pos[0], self.pos[1]+self.cross_size, self.pos[0], self.pos[1]-self.cross_size
+
+
+<Target>:
+    size: 50, 50
+    out_scale: 1.9
+    in_scale: 1.6
+    cross_size: 80
+    canvas:
+        Color:
+            rgb: .1,.4,.5
+        Ellipse:
+            size: [s*self.out_scale for s in self.size]
+            #size: [s*self.out_scale for s in self.size]
+            pos: [p-s*self.out_scale/2 for p, s in zip(self.pos, self.size)]
+        Color:
+            rgb: .05, .05, .05
+        Ellipse:
+            size: [s*self.in_scale for s in self.size]
+            #size: [s*self.in_scale for s in self.size]
+            pos: [p-s*self.in_scale/2 for p, s in zip(self.pos, self.size)]
+        Color:
+            rgb: 1, 1, 1
+        Line:
+            points: self.pos[0]-self.cross_size, self.pos[1], self.pos[0]+self.cross_size, self.pos[1]
+        Line:
+            points: self.pos[0], self.pos[1]+self.cross_size, self.pos[0], self.pos[1]-self.cross_size
+
+<TimeGauge>:
+    size: 30, 900
+    canvas:
+        Color:
+            rgb: 1, 1, 1
+        Line:
+            rectangle: self.pos[0], self.pos[1]-self.size[1]/2, self.size[0], self.size[1]
+        Color:
+            rgb: 0, .5, 0
+        Rectangle:
+            pos: self.pos[0], self.pos[1]-self.size[1]/2
+            size: self.size[0], root.green_height_percentage * self.size[1]
+
+<CrossHair>
+    canvas:
+        Line:
+            points: 0, self.pos[1], 2000, self.pos[1]
+        Line:
+            points: self.pos[0], 0, self.pos[0], 2000
+
+<RubberObstacle>
+    canvas:
+        Color:
+            rgba: 0,0,0,0
+        Line:
+            width: max(1,abs(root.middle_pos*.05))
+            points: self.pos[0], 0, self.pos[0]+root.middle_pos, self.pos[1], self.pos[0], self.size[1]
+
+<ConnectionIndicator>
+    text: "Connecated!" if root.connected else "Not connected!"
+    bold: True
+    color: (0,.2,0) if root.connected else (.2, 0, 0)
+    canvas.before:
+        Color:
+            rgb: (0,.7,0) if root.connected else (.7,0,0)
+        Rectangle:
+            pos: self.pos
+            size: self.size
