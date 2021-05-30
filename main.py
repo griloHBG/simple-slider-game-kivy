@@ -3,6 +3,8 @@ import math
 import random
 import select
 import socket
+from pathlib import Path
+from time import sleep
 
 from kivy.app import App
 from kivy.uix.button import Button
@@ -70,12 +72,22 @@ class SliderInterfaceRoot(BoxLayout):
 
     section = "left" # or "right"
 
+    request_data_from_BBB = False
+
+    TCPClientSocket = None
+
+    target_way = 0
+
+
     def __init__(self, **kwargs):
         super(SliderInterfaceRoot, self).__init__(**kwargs)
         self.player_on_target_sentinel = None
         self.target_pos_limit = 900
         self.position_tolerance = (self.target.size[0] * self.target.out_scale - self.player.size[0])/2
         Clock.schedule_once(self.update_target_pos, 4)
+
+
+    counter_msg = 0
 
     def on_start_of_target(self, dt):
         if self.position_error < self.position_tolerance:
@@ -85,6 +97,51 @@ class SliderInterfaceRoot(BoxLayout):
                 self.player_on_target_sentinel = None
                 self.update_target_pos()
                 self.gauge.green_height_percentage = 0
+
+                if self.request_data_from_BBB == False:
+                    self.request_data_from_BBB = True
+                else:
+                    self.request_data_from_BBB = False
+
+                    #TODO disable game until all data is received (also show a msgBox?)
+
+                    msg = "requesting data from player"
+                    bytesToSend = str.encode(msg)
+
+                    inputs = [self.TCPClientSocket]
+                    outputs = []
+
+                    # Send to server using created UDP
+                    print("sending data request")
+                    self.TCPClientSocket.send(bytesToSend)
+
+                    print("waiting for answer")
+                    readable, writable, exceptional = select.select(inputs, outputs, inputs, None) #BLOCKING
+
+                    print("answer received")
+
+                    if self.TCPClientSocket in readable:
+                        print("waiting for log size message")
+                        log_size = self.TCPClientSocket.recv(4096) #tamanho do log a ser recebido
+                        print("log size is", log_size)
+                        log_size = int(log_size)
+                        # Look for the response
+
+                        amount_received = 0
+
+                        file_path = Path.cwd() / f"xablau{self.counter_msg}.csv"
+
+                        self.counter_msg += 1
+
+                        with open(file_path, "w") as file:
+                            while amount_received < log_size:
+                                data = self.TCPClientSocket.recv(4096)
+                                file.write(data.decode('utf-8'))
+                                amount_received += len(data)
+                            print("all log was received!")
+
+                        print("file saved in", str(file_path))
+
         else:
             self.gauge.green_height_percentage = self.gauge.green_height_percentage - self.green_decrease
             if self.gauge.green_height_percentage <= 0:
@@ -164,6 +221,11 @@ class SliderInterfaceRoot(BoxLayout):
                 except:
                     self.connection_failures += 1
                     self.status_message = "Couldn't connect ({})".format(self.connection_failures)
+
+                self.TCPClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sleep(1)
+                self.TCPClientSocket.connect((self.server_ip.text, 8081))
+                print("game connected to TCP server!")
             else:
                 self.connection_failures += 1
                 self.status_message = "Couldn't connect ({})".format(self.connection_failures)
@@ -191,7 +253,7 @@ class SliderInterfaceApp(App):
     def build(self):
         s = SliderInterfaceRoot()
         s.update_target_pos()
-        Window.maximize()
+        # Window.maximize()
         return s
 
 SliderInterfaceApp().run()
