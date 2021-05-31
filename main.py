@@ -5,6 +5,7 @@ import select
 import socket
 from pathlib import Path
 from time import sleep
+from passivity_elec_motor_1dof.nsga3_simulated import NSGA3
 
 from kivy.app import App
 from kivy.uix.button import Button
@@ -52,6 +53,11 @@ class SliderInterfaceRoot(BoxLayout):
     connect_button = ObjectProperty(None)
     status_message = StringProperty("")
 
+    gen_idx = ObjectProperty(None)
+    ind_idx = ObjectProperty(None)
+    gain_b = ObjectProperty(None)
+    gain_k = ObjectProperty(None)
+
     position_error = NumericProperty(0)
 
     position_tolerance = NumericProperty(5)
@@ -78,6 +84,11 @@ class SliderInterfaceRoot(BoxLayout):
 
     target_way = 0
 
+    nsga3 = NSGA3()
+
+    counter_msg = 0
+
+    controller_info = None
 
     def __init__(self, **kwargs):
         super(SliderInterfaceRoot, self).__init__(**kwargs)
@@ -85,9 +96,6 @@ class SliderInterfaceRoot(BoxLayout):
         self.target_pos_limit = 900
         self.position_tolerance = (self.target.size[0] * self.target.out_scale - self.player.size[0])/2
         Clock.schedule_once(self.update_target_pos, 4)
-
-
-    counter_msg = 0
 
     def on_start_of_target(self, dt):
         if self.position_error < self.position_tolerance:
@@ -129,7 +137,10 @@ class SliderInterfaceRoot(BoxLayout):
 
                         amount_received = 0
 
-                        file_path = Path.cwd() / f"xablau{self.counter_msg}.csv"
+                        if self.counter_msg > 0:
+                            file_path = Path.cwd() / f"g{self.controller_info['gen_idx']}_i{self.controller_info['ind_idx']}_K{self.controller_info['k']}_B{self.controller_info['b']}.csv"
+                        else:
+                            file_path = Path.cwd() / "DISCARD.csv"
 
                         self.counter_msg += 1
 
@@ -142,6 +153,17 @@ class SliderInterfaceRoot(BoxLayout):
 
                         print("file saved in", str(file_path))
 
+                        # sending new gains
+                        self.nsga3.evaluate_ind(file_path)
+                        self.controller_info = self.nsga3.get_next_ind()
+                        self.gen_idx.text = "{:.2f}".format(self.controller_info["gen_idx"])
+                        self.ind_idx.text = "{:.2f}".format(self.controller_info["ind_idx"])
+                        self.gain_b.text =  "{:.2f}".format(self.controller_info["b"])
+                        self.gain_k.text =  "{:.2f}".format(self.controller_info["k"])
+                        print("controller info to BBB:", self.controller_info)
+
+                        self.TCPClientSocket.send(str.encode(json.dumps(self.controller_info)))
+
         else:
             self.gauge.green_height_percentage = self.gauge.green_height_percentage - self.green_decrease
             if self.gauge.green_height_percentage <= 0:
@@ -150,12 +172,13 @@ class SliderInterfaceRoot(BoxLayout):
                 self.gauge.green_height_percentage = 0
 
     def update_target_pos(self, *args, **kwargs):
+
         if not self.get_root_window() is None:
             if self.section == "left":
-                self.target.pos[0] = self.get_root_window().size[0]/4 + (0-.5)*2*self.get_root_window().size[0]/4/3
+                self.target.pos[0] = self.get_root_window().size[0]/4 + (random.random()-.5)*2*self.get_root_window().size[0]/4/3
                 self.section = "right"
             else:
-                self.target.pos[0] = self.get_root_window().size[0]*5/8 + (1-.5)*2*self.get_root_window().size[0]/4/3
+                self.target.pos[0] = self.get_root_window().size[0]*5/8 + (random.random()-.5)*2*self.get_root_window().size[0]/4/3
                 self.section = "left"
 
             # self.target.pos[0] = (random.Random().random()-.5)*2*self.target_pos_limit + self.size[0]/2
@@ -226,6 +249,7 @@ class SliderInterfaceRoot(BoxLayout):
                 sleep(1)
                 self.TCPClientSocket.connect((self.server_ip.text, 8081))
                 print("game connected to TCP server!")
+
             else:
                 self.connection_failures += 1
                 self.status_message = "Couldn't connect ({})".format(self.connection_failures)

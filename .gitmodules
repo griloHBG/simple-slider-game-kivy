@@ -1,0 +1,3 @@
+[submodule "passivity_elec_motor_1dof"]
+	path = passivity_elec_motor_1dof
+	url = https://github.com/glahr/passivity_elec_motor_1dof.git

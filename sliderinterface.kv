@@ -7,6 +7,10 @@
     server_ip: server_ip
     server_port: server_port
     connect_button: connect_button
+    gen_idx: gen_idx
+    ind_idx: ind_idx
+    gain_b: gain_b
+    gain_k: gain_k
 
     orientation: 'vertical'
 
@@ -66,6 +70,30 @@
         Player:
             id: player
             pos: self.parent.size[0]/2, self.parent.size[1]/2
+
+    BoxLayout:
+        size_hint_y: .07
+        orientation: "horizontal"
+        Label:
+            text: "Geração: "
+        Label:
+            id: gen_idx
+            text: "1"
+        Label:
+            text: "indivíduo: "
+        Label:
+            id: ind_idx
+            text: "1"
+        Label:
+            text: "Amortecimento (B):"
+        Label:
+            id: gain_b
+            text: "1"
+        Label:
+            text: "Rigidex (K):"
+        Label:
+            id: gain_k
+            text: "1"
 
 #    CrossHair:
 #        pos: player.pos
