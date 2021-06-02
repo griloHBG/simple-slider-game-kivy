@@ -75,22 +75,22 @@
         size_hint_y: .07
         orientation: "horizontal"
         Label:
-            text: "Geração: "
+            text: "Generation: "
         Label:
             id: gen_idx
             text: "1"
         Label:
-            text: "indivíduo: "
+            text: "Individual: "
         Label:
             id: ind_idx
             text: "1"
         Label:
-            text: "Amortecimento (B):"
+            text: "Damping (B):"
         Label:
             id: gain_b
             text: "1"
         Label:
-            text: "Rigidex (K):"
+            text: "Stiffness (K):"
         Label:
             id: gain_k
             text: "1"
@@ -171,7 +171,7 @@
             points: self.pos[0], 0, self.pos[0]+root.middle_pos, self.pos[1], self.pos[0], self.size[1]
 
 <ConnectionIndicator>
-    text: "Connecated!" if root.connected else "Not connected!"
+    text: "Connected!" if root.connected else "Not connected!"
     bold: True
     color: (0,.2,0) if root.connected else (.2, 0, 0)
     canvas.before:

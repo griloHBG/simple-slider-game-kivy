@@ -62,7 +62,7 @@ class SliderInterfaceRoot(BoxLayout):
 
     position_tolerance = NumericProperty(5)
 
-    green_increase = 0.02
+    green_increase = 0.04
     green_decrease = 0.04
 
 
@@ -138,11 +138,10 @@ class SliderInterfaceRoot(BoxLayout):
                         amount_received = 0
 
                         if self.counter_msg > 0:
-                            file_path = Path.cwd() / f"g{self.controller_info['gen_idx']}_i{self.controller_info['ind_idx']}_K{self.controller_info['k']}_B{self.controller_info['b']}.csv"
+                            # file_path = Path.cwd() / f"g{str(self.controller_info['gen_idx']).zfill(2)}_i{str(self.controller_info['ind_idx']).zfill(2)}_K{str(self.controller_info['k']).zfill(3):.2f}_B{str(self.controller_info['b']).zfill(3):.2f}.csv"
+                            file_path = Path.cwd() / "g{0:02}_i{1:02}_K{2:03.2f}_B{3:03.2f}.csv".format(self.controller_info['gen_idx'], self.controller_info['ind_idx'], self.controller_info['k'], self.controller_info['b'])
                         else:
                             file_path = Path.cwd() / "DISCARD.csv"
-
-                        self.counter_msg += 1
 
                         with open(file_path, "w") as file:
                             while amount_received < log_size:
@@ -154,7 +153,8 @@ class SliderInterfaceRoot(BoxLayout):
                         print("file saved in", str(file_path))
 
                         # sending new gains
-                        self.nsga3.evaluate_ind(file_path)
+                        if self.counter_msg > 0:
+                            self.nsga3.evaluate_ind(file_path)
                         self.controller_info = self.nsga3.get_next_ind()
                         self.gen_idx.text = "{:.2f}".format(self.controller_info["gen_idx"])
                         self.ind_idx.text = "{:.2f}".format(self.controller_info["ind_idx"])
@@ -163,6 +163,8 @@ class SliderInterfaceRoot(BoxLayout):
                         print("controller info to BBB:", self.controller_info)
 
                         self.TCPClientSocket.send(str.encode(json.dumps(self.controller_info)))
+
+                        self.counter_msg += 1
 
         else:
             self.gauge.green_height_percentage = self.gauge.green_height_percentage - self.green_decrease
