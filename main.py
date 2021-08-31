@@ -90,6 +90,11 @@ class SliderInterfaceRoot(BoxLayout):
 
     controller_info = None
 
+    #{'b': self.current_offspring[self.current_ind_idx][B_pos], 'k': self.current_offspring[self.current_ind_idx][K_pos],'ind_idx': self.current_ind_idx, 'gen_idx': self.current_gen_idx}
+    fixed_controller_gains = {'b':50, 'k':100, 'ind_idx':0, 'gen_idx':0}
+
+    USING_FIXED_CONTROLLER_GAIN = True
+
     def __init__(self, **kwargs):
         super(SliderInterfaceRoot, self).__init__(**kwargs)
         self.player_on_target_sentinel = None
@@ -153,9 +158,15 @@ class SliderInterfaceRoot(BoxLayout):
                         print("file saved in", str(file_path))
 
                         # sending new gains
-                        if self.counter_msg > 0:
+                        if self.counter_msg > 0 and not self.USING_FIXED_CONTROLLER_GAIN:
                             self.nsga3.evaluate_ind(file_path)
-                        self.controller_info = self.nsga3.get_next_ind()
+
+                        if self.USING_FIXED_CONTROLLER_GAIN:
+                            self.controller_info = self.fixed_controller_gains
+                            self.fixed_controller_gains['ind_idx'] += 1
+                        else:
+                            self.controller_info = self.nsga3.get_next_ind()
+
                         self.gen_idx.text = "{:.2f}".format(self.controller_info["gen_idx"])
                         self.ind_idx.text = "{:.2f}".format(self.controller_info["ind_idx"])
                         self.gain_b.text =  "{:.2f}".format(self.controller_info["b"])
